@@ -282,10 +282,10 @@ The File Compression Tool uses modular components for separation of concerns and
 
 #### 4. Compression Module (Encoder)
 
-- **Function:** `compressFile`
-- **Input:** Input file path, output file path, code table (from `generateCodes`)
-- **Output:** Compressed `.huff` file (header + encoded bitstream)
-- **Errors:** Input file not found or unreadable, output path invalid or unwritable, output file already exists and overwrite not confirmed, code table empty.
+- **Function:** `writeHuffFile`
+- **Input:** Input byte sequence, code table (from `generateCodes`), output path, and an optional overwrite flag (false by default).
+- **Output:** Version 1 `.huff` file with a little-endian frequency-table header and MSB-first Huffman bitstream; see `ENCODER_TESTS.md` for the byte layout.
+- **Errors:** Missing/invalid code for an input symbol, output path invalid or unwritable, output file already exists without explicit overwrite permission, or write failure.
 
 #### 5. Decompression Module (Decoder)
 
@@ -371,4 +371,3 @@ The command-line interface provides:
 | GitHub | Version control and issue tracking |
 
 ---
-
