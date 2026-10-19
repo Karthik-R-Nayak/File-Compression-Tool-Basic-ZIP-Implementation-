@@ -11,12 +11,15 @@ int main()
     if (!readInputFile("sample.txt", data))
         return 1;
 
-    cout << "First file bytes: " << data.size() << endl;
+    cout << "Before failed read: " << data.size() << endl;
 
-    if (!readInputFile("empty.txt", data))
+    if (readInputFile("missing_file.txt", data))
+    {
+        cout << "Unexpected success!" << endl;
         return 1;
+    }
 
-    cout << "Second file bytes: " << data.size() << endl;
+    cout << "After failed open: " << data.size() << endl;
 
     return 0;
 }

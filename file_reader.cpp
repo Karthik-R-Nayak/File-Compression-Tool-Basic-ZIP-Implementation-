@@ -28,9 +28,11 @@ bool readInputFile(const string& filePath, vector<uint8_t>& data)
 
     if (inputFile.bad())
     {
-        cerr << "Error: Failed while reading input file."
-             << endl;
-        return false;
+          cerr << "Error: Failed while reading input file."
+               << endl;
+
+          data.clear();
+          return false;
     }
 
     return true;
