@@ -8,6 +8,7 @@ using namespace std;
 
 bool readInputFile(const string& filePath, vector<uint8_t>& data)
 {
+    data.clear();
     ifstream inputFile(filePath, ios::binary);
 
     if (!inputFile.is_open())
