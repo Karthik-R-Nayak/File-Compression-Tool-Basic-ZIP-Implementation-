@@ -1,8 +1,6 @@
 
 #include <iostream>
-#include <vector>
-#include <cstdint>
-#include "file_reader.cpp"
+#include "file_reader.hpp"
 
 using namespace std;
 

@@ -1,14 +1,14 @@
+
+#include "file_reader.hpp"
 #include <iostream>
 #include <fstream>
-#include <vector>
-#include <string>
-#include <cstdint>
 
 using namespace std;
 
 bool readInputFile(const string& filePath, vector<uint8_t>& data)
 {
     data.clear();
+
     ifstream inputFile(filePath, ios::binary);
 
     if (!inputFile.is_open())
