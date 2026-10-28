@@ -133,6 +133,24 @@ void testEqualFrequencies()
     }
 }
 
+void testDeterministicCodes()
+{
+    std::map<uint8_t, std::uint64_t> frequencies = {
+        {'A', 5},
+        {'B', 5},
+        {'C', 3},
+        {'D', 3}
+    };
+
+    auto root1 = buildHuffmanTree(frequencies);
+    auto codes1 = generateHuffmanCodes(root1);
+
+    auto root2 = buildHuffmanTree(frequencies);
+    auto codes2 = generateHuffmanCodes(root2);
+
+    assert(codes1 == codes2);
+}
+
 int main()
 {
     std::cout << "Test program started" << std::endl;
@@ -154,6 +172,9 @@ int main()
 
     testEqualFrequencies();
     std::cout << "Equal-frequency test passed" << std::endl;
+
+    testDeterministicCodes();
+    std::cout << "Deterministic-codes test passed" << std::endl;
 
     std::cout << "All Huffman tree tests passed!" << std::endl;
 
