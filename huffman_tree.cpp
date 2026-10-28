@@ -1,5 +1,7 @@
+
 #include "huffman_tree.hpp"
 
+#include <cstdint>
 #include <queue>
 #include <stdexcept>
 #include <utility>
@@ -29,7 +31,6 @@ namespace
 
         if (node->isLeaf())
         {
-            // A single-symbol file needs a non-empty code.
             codes[node->symbol] = prefix.empty() ? "0" : prefix;
             return;
         }
@@ -53,7 +54,8 @@ std::shared_ptr<HuffmanNode> buildHuffmanTree(
     for (const auto& entry : frequencies)
     {
         if (entry.second == 0)
-            throw std::invalid_argument("Symbol frequency must be greater than zero.");
+            throw std::invalid_argument(
+                "Symbol frequency must be greater than zero.");
 
         queue.push(std::make_shared<HuffmanNode>(
             entry.first, entry.second));
@@ -67,11 +69,9 @@ std::shared_ptr<HuffmanNode> buildHuffmanTree(
         auto right = queue.top();
         queue.pop();
 
-        if (left->frequency >
-            UINT64_MAX - right->frequency)
-        {
-            throw std::overflow_error("Huffman frequency total overflow.");
-        }
+        if (left->frequency > UINT64_MAX - right->frequency)
+            throw std::overflow_error(
+                "Huffman frequency total overflow.");
 
         auto parent = std::make_shared<HuffmanNode>(
             left->symbol,
