@@ -5,6 +5,7 @@
 #include <queue>
 #include <stdexcept>
 #include <utility>
+#include <vector>
 
 namespace
 {
@@ -20,24 +21,6 @@ namespace
             return a->symbol > b->symbol;
         }
     };
-
-    void generateCodesRecursive(
-        const std::shared_ptr<HuffmanNode>& node,
-        const std::string& prefix,
-        HuffmanCodeMap& codes)
-    {
-        if (!node)
-            return;
-
-        if (node->isLeaf())
-        {
-            codes[node->symbol] = prefix.empty() ? "0" : prefix;
-            return;
-        }
-
-        generateCodesRecursive(node->left, prefix + "0", codes);
-        generateCodesRecursive(node->right, prefix + "1", codes);
-    }
 }
 
 std::shared_ptr<HuffmanNode> buildHuffmanTree(
@@ -54,8 +37,10 @@ std::shared_ptr<HuffmanNode> buildHuffmanTree(
     for (const auto& entry : frequencies)
     {
         if (entry.second == 0)
+        {
             throw std::invalid_argument(
                 "Symbol frequency must be greater than zero.");
+        }
 
         queue.push(std::make_shared<HuffmanNode>(
             entry.first, entry.second));
@@ -70,8 +55,10 @@ std::shared_ptr<HuffmanNode> buildHuffmanTree(
         queue.pop();
 
         if (left->frequency > UINT64_MAX - right->frequency)
+        {
             throw std::overflow_error(
                 "Huffman frequency total overflow.");
+        }
 
         auto parent = std::make_shared<HuffmanNode>(
             left->symbol,
@@ -90,6 +77,47 @@ HuffmanCodeMap generateHuffmanCodes(
     const std::shared_ptr<HuffmanNode>& root)
 {
     HuffmanCodeMap codes;
-    generateCodesRecursive(root, "", codes);
+
+    if (!root)
+        return codes;
+
+    struct PendingNode
+    {
+        std::shared_ptr<HuffmanNode> node;
+        std::string prefix;
+    };
+
+    std::vector<PendingNode> pending;
+    pending.push_back({root, ""});
+
+    while (!pending.empty())
+    {
+        PendingNode current = std::move(pending.back());
+        pending.pop_back();
+
+        if (current.node->isLeaf())
+        {
+            codes[current.node->symbol] =
+                current.prefix.empty() ? "0" : current.prefix;
+            continue;
+        }
+
+        if (current.node->right)
+        {
+            pending.push_back({
+                current.node->right,
+                current.prefix + "1"
+            });
+        }
+
+        if (current.node->left)
+        {
+            pending.push_back({
+                current.node->left,
+                current.prefix + "0"
+            });
+        }
+    }
+
     return codes;
 }
