@@ -151,6 +151,29 @@ void testDeterministicCodes()
     assert(codes1 == codes2);
 }
 
+void testEverySymbolHasCode()
+{
+    std::map<uint8_t, std::uint64_t> frequencies = {
+        {'A', 10},
+        {'B', 7},
+        {'C', 4},
+        {'D', 2},
+        {'E', 1}
+    };
+
+    auto root = buildHuffmanTree(frequencies);
+    auto codes = generateHuffmanCodes(root);
+
+    assert(root != nullptr);
+    assert(codes.size() == frequencies.size());
+
+    for (const auto& entry : frequencies)
+    {
+        assert(codes.count(entry.first) == 1);
+        assert(!codes.at(entry.first).empty());
+    }
+}
+
 int main()
 {
     std::cout << "Test program started" << std::endl;
@@ -175,6 +198,9 @@ int main()
 
     testDeterministicCodes();
     std::cout << "Deterministic-codes test passed" << std::endl;
+
+    testEverySymbolHasCode();
+    std::cout << "Every-symbol-code test passed" << std::endl;
 
     std::cout << "All Huffman tree tests passed!" << std::endl;
 
