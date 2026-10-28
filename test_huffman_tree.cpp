@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <stdexcept>
 #include <string>
 
@@ -100,6 +101,15 @@ void testZeroFrequencyRejected()
     assert(threw);
 }
 
+void testNullRoot()
+{
+    std::shared_ptr<HuffmanNode> root = nullptr;
+
+    auto codes = generateHuffmanCodes(root);
+
+    assert(codes.empty());
+}
+
 int main()
 {
     std::cout << "Test program started" << std::endl;
@@ -115,6 +125,9 @@ int main()
 
     testZeroFrequencyRejected();
     std::cout << "Zero-frequency test passed" << std::endl;
+
+    testNullRoot();
+    std::cout << "Null-root test passed" << std::endl;
 
     std::cout << "All Huffman tree tests passed!" << std::endl;
 
