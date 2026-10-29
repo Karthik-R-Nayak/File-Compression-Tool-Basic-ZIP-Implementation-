@@ -102,21 +102,21 @@ HuffmanCodeMap generateHuffmanCodes(
             continue;
         }
 
-        if (current.node->right)
+        if (!current.node->left || !current.node->right)
         {
-            pending.push_back({
-                current.node->right,
-                current.prefix + "1"
-            });
+            throw std::invalid_argument(
+                "Internal Huffman node must have both children.");
         }
 
-        if (current.node->left)
-        {
-            pending.push_back({
-                current.node->left,
-                current.prefix + "0"
-            });
-        }
+        pending.push_back({
+            current.node->right,
+            current.prefix + "1"
+        });
+
+        pending.push_back({
+            current.node->left,
+            current.prefix + "0"
+        });
     }
 
     return codes;

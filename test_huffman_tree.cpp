@@ -174,6 +174,28 @@ void testEverySymbolHasCode()
     }
 }
 
+void testMalformedTreeRejected()
+{
+    auto root = std::make_shared<HuffmanNode>('A', 10);
+    auto child = std::make_shared<HuffmanNode>('B', 5);
+
+    // An internal node with only one child is malformed.
+    root->left = child;
+
+    bool threw = false;
+
+    try
+    {
+        generateHuffmanCodes(root);
+    }
+    catch (const std::invalid_argument&)
+    {
+        threw = true;
+    }
+
+    assert(threw);
+}
+
 int main()
 {
     std::cout << "Test program started" << std::endl;
@@ -201,6 +223,9 @@ int main()
 
     testEverySymbolHasCode();
     std::cout << "Every-symbol-code test passed" << std::endl;
+
+    testMalformedTreeRejected();
+    std::cout << "Malformed-tree test passed" << std::endl;
 
     std::cout << "All Huffman tree tests passed!" << std::endl;
 
