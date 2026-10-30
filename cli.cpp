@@ -5,7 +5,10 @@
 #include "frequency.hpp"
 #include "huffman_tree.hpp"
 
+#include <cstdint>
 #include <exception>
+#include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <unordered_map>
 #include <vector>
@@ -15,6 +18,20 @@ namespace
     bool startsWithDash(const std::string& value)
     {
         return !value.empty() && value[0] == '-';
+    }
+
+    bool getFileSize(const std::string& path, std::uint64_t& size)
+    {
+        std::ifstream file(path.c_str(), std::ios::binary | std::ios::ate);
+        if (!file.is_open())
+            return false;
+
+        const std::streamoff end = file.tellg();
+        if (end < 0)
+            return false;
+
+        size = static_cast<std::uint64_t>(end);
+        return true;
     }
 
     int runCompression(const CliOptions& options,
@@ -46,7 +63,40 @@ namespace
         }
 
         output << "Compression successful." << std::endl;
+        output << "Original size: " << data.size() << " bytes" << std::endl;
         output << "Output: " << options.outputPath << std::endl;
+
+        std::uint64_t compressedSize = 0;
+        if (!getFileSize(options.outputPath, compressedSize))
+        {
+            output << "Compressed size: unavailable" << std::endl;
+            output << "Compression ratio: unavailable" << std::endl;
+            errors << "Warning: Compression succeeded, but the output size "
+                      "could not be determined."
+                   << std::endl;
+            return 0;
+        }
+
+        output << "Compressed size: " << compressedSize << " bytes"
+               << std::endl;
+        if (data.empty())
+        {
+            output << "Compression ratio: N/A (empty input)" << std::endl;
+        }
+        else if (compressedSize == 0)
+        {
+            output << "Compression ratio: unavailable (empty output)"
+                   << std::endl;
+        }
+        else
+        {
+            const long double ratio =
+                static_cast<long double>(data.size()) /
+                static_cast<long double>(compressedSize);
+            output << "Compression ratio (original/compressed): "
+                   << std::fixed << std::setprecision(2) << ratio << ":1"
+                   << std::endl;
+        }
         return 0;
     }
 }

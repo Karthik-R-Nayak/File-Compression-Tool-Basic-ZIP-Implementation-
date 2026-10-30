@@ -99,22 +99,76 @@ namespace
             compressed.gcount() == 4 &&
             magic[0] == 'H' && magic[1] == 'U' &&
             magic[2] == 'F' && magic[3] == 'F';
+        compressed.close();
 
+        const std::string outputText = output.str();
         std::remove(inputPath.c_str());
         std::remove(outputPath.c_str());
 
         return expect(result == 0, "compress through CLI") &&
                expect(validOutput, "create a valid compressed output") &&
-               expect(output.str().find("Compression successful.") !=
+               expect(outputText.find("Compression successful.") !=
                           std::string::npos,
                       "display successful command status") &&
+               expect(outputText.find("Original size: 14 bytes") !=
+                          std::string::npos,
+                      "display original size") &&
+               expect(outputText.find("Compressed size: ") !=
+                          std::string::npos,
+                      "display compressed size") &&
+               expect(outputText.find(
+                          "Compression ratio (original/compressed): ") !=
+                          std::string::npos,
+                      "display compression ratio") &&
                expect(errors.str().empty(), "do not report CLI errors");
+    }
+
+    bool testEmptyInputStatistics()
+    {
+        const std::string inputPath = "cli_test_empty_input";
+        const std::string outputPath = "cli_test_empty_output.huff";
+        std::remove(inputPath.c_str());
+        std::remove(outputPath.c_str());
+
+        {
+            std::ofstream input(inputPath.c_str(), std::ios::binary);
+            if (!input)
+                return expect(false, "create empty CLI input fixture");
+        }
+
+        std::ostringstream output;
+        std::ostringstream errors;
+        const int result = runCli(
+            std::vector<std::string>{
+                "compress", inputPath, "-o", outputPath
+            },
+            output,
+            errors);
+
+        const std::string outputText = output.str();
+        std::remove(inputPath.c_str());
+        std::remove(outputPath.c_str());
+
+        return expect(result == 0, "compress empty input through CLI") &&
+               expect(outputText.find("Original size: 0 bytes") !=
+                          std::string::npos,
+                      "display empty original size") &&
+               expect(outputText.find("Compressed size: 23 bytes") !=
+                          std::string::npos,
+                      "display empty-input header size") &&
+               expect(outputText.find(
+                          "Compression ratio: N/A (empty input)") !=
+                          std::string::npos,
+                      "avoid division by zero for empty input") &&
+               expect(errors.str().empty(),
+                      "do not report errors for empty input");
     }
 }
 
 int main()
 {
-    if (!testArgumentParsing() || !testCompressionCommand())
+    if (!testArgumentParsing() || !testCompressionCommand() ||
+        !testEmptyInputStatistics())
         return 1;
 
     std::cout << "All CLI tests passed." << std::endl;

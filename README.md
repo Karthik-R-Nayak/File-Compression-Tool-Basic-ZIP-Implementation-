@@ -23,6 +23,9 @@ file-compressor --help
 If `-o` / `--output` is omitted, the output path is `<input>.huff`. The tool
 does not replace an existing output file unless overwrite protection is later
 explicitly confirmed or configured; the current encoder rejects such a write.
+On successful compression, the CLI displays the original size, compressed
+size, and the original-to-compressed ratio. The ratio is reported as `N/A` for
+an empty input.
 
 Decompression is not available yet. It depends on implementation of
 FCT-F-010 through FCT-F-014.
