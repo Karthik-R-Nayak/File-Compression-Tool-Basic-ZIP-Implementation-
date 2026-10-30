@@ -16,9 +16,11 @@ struct CliOptions
     CliCommand command;
     std::string inputPath;
     std::string outputPath;
+    bool forceOverwrite;
 
     CliOptions()
-        : command(CliCommand::Help)
+        : command(CliCommand::Help),
+          forceOverwrite(false)
     {
     }
 };
@@ -30,6 +32,7 @@ bool parseCliArguments(const std::vector<std::string>& arguments,
 void printCliUsage(std::ostream& output);
 
 int runCli(const std::vector<std::string>& arguments,
+           std::istream& input,
            std::ostream& output,
            std::ostream& errors);
 

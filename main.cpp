@@ -10,5 +10,5 @@ int main(int argc, char* argv[])
     for (int i = 1; i < argc; ++i)
         arguments.push_back(argv[i]);
 
-    return runCli(arguments, std::cout, std::cerr);
+    return runCli(arguments, std::cin, std::cout, std::cerr);
 }

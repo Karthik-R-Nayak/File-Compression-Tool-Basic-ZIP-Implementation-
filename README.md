@@ -16,13 +16,14 @@ On Windows, the resulting executable can be named `file-compressor.exe`.
 ## Usage
 
 ```text
-file-compressor compress <input> [-o|--output <path>]
+file-compressor compress <input> [-o|--output <path>] [--force]
 file-compressor --help
 ```
 
-If `-o` / `--output` is omitted, the output path is `<input>.huff`. The tool
-does not replace an existing output file unless overwrite protection is later
-explicitly confirmed or configured; the current encoder rejects such a write.
+If `-o` / `--output` is omitted, the output path is `<input>.huff`. If that
+output already exists, the CLI prompts before replacing it. Answer `y` or
+`yes` to confirm; any other answer cancels and preserves the existing file. Use
+`--force` to deliberately overwrite without a prompt.
 On successful compression, the CLI displays the original size, compressed
 size, and the original-to-compressed ratio. The ratio is reported as `N/A` for
 an empty input.

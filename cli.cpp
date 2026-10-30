@@ -5,6 +5,7 @@
 #include "frequency.hpp"
 #include "huffman_tree.hpp"
 
+#include <cctype>
 #include <cstdint>
 #include <exception>
 #include <fstream>
@@ -18,6 +19,48 @@ namespace
     bool startsWithDash(const std::string& value)
     {
         return !value.empty() && value[0] == '-';
+    }
+
+    bool outputExists(const std::string& path)
+    {
+        std::ifstream existing(path.c_str(), std::ios::binary);
+        return existing.is_open();
+    }
+
+    bool confirmOverwrite(std::istream& input,
+                          std::ostream& output,
+                          std::ostream& errors,
+                          const std::string& path)
+    {
+        output << "Output file already exists: " << path << std::endl
+               << "Overwrite? [y/N]: " << std::flush;
+
+        std::string answer;
+        if (!std::getline(input, answer))
+        {
+            errors << "Error: Compression cancelled; existing output was "
+                      "not changed."
+                   << std::endl;
+            return false;
+        }
+
+        std::string normalizedAnswer;
+        for (char character : answer)
+        {
+            if (!std::isspace(static_cast<unsigned char>(character)))
+            {
+                normalizedAnswer.push_back(static_cast<char>(
+                    std::tolower(static_cast<unsigned char>(character))));
+            }
+        }
+
+        if (normalizedAnswer == "y" || normalizedAnswer == "yes")
+            return true;
+
+        errors << "Error: Compression cancelled; existing output was not "
+                  "changed."
+               << std::endl;
+        return false;
     }
 
     bool getFileSize(const std::string& path, std::uint64_t& size)
@@ -35,6 +78,7 @@ namespace
     }
 
     int runCompression(const CliOptions& options,
+                       std::istream& input,
                        std::ostream& output,
                        std::ostream& errors)
     {
@@ -52,7 +96,23 @@ namespace
             const std::unordered_map<std::uint8_t, std::string> codes(
                 generatedCodes.begin(), generatedCodes.end());
 
-            if (!writeHuffFile(data, codes, options.outputPath))
+            bool overwriteExisting = options.forceOverwrite;
+            if (!overwriteExisting && outputExists(options.outputPath))
+            {
+                if (!confirmOverwrite(input,
+                                      output,
+                                      errors,
+                                      options.outputPath))
+                {
+                    return 1;
+                }
+                overwriteExisting = true;
+            }
+
+            if (!writeHuffFile(data,
+                               codes,
+                               options.outputPath,
+                               overwriteExisting))
                 return 1;
         }
         catch (const std::exception& error)
@@ -132,6 +192,7 @@ bool parseCliArguments(const std::vector<std::string>& arguments,
 
     options.command = CliCommand::Compress;
     bool outputPathProvided = false;
+    bool forceProvided = false;
     bool parseOptions = true;
     std::vector<std::string> positionalArguments;
 
@@ -163,6 +224,16 @@ bool parseCliArguments(const std::vector<std::string>& arguments,
                 return false;
             }
             outputPathProvided = true;
+        }
+        else if (parseOptions && argument == "--force")
+        {
+            if (forceProvided)
+            {
+                errorMessage = "Specify --force only once.";
+                return false;
+            }
+            options.forceOverwrite = true;
+            forceProvided = true;
         }
         else if (parseOptions && startsWithDash(argument))
         {
@@ -197,14 +268,17 @@ void printCliUsage(std::ostream& output)
 {
     output << "Usage:\n"
            << "  file-compressor compress <input> "
-              "[-o|--output <path>]\n"
+              "[-o|--output <path>] [--force]\n"
            << "  file-compressor --help\n\n"
            << "If no output path is supplied, <input>.huff is used.\n"
+           << "Existing output files require confirmation; --force "
+              "overwrites without prompting.\n"
            << "Decompression is not available in this version."
            << std::endl;
 }
 
 int runCli(const std::vector<std::string>& arguments,
+           std::istream& input,
            std::ostream& output,
            std::ostream& errors)
 {
@@ -223,5 +297,5 @@ int runCli(const std::vector<std::string>& arguments,
         return 0;
     }
 
-    return runCompression(options, output, errors);
+    return runCompression(options, input, output, errors);
 }

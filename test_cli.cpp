@@ -45,6 +45,16 @@ namespace
                     "derive default output path"))
             return false;
 
+        const bool parsedForce = parseCliArguments(
+            std::vector<std::string>{
+                "compress", "input.txt", "--force"
+            },
+            options,
+            errorMessage);
+        if (!expect(parsedForce && options.forceOverwrite,
+                    "parse deliberate overwrite option"))
+            return false;
+
         const bool rejectedMissingInput = !parseCliArguments(
             std::vector<std::string>{"compress"},
             options,
@@ -85,10 +95,12 @@ namespace
 
         std::ostringstream output;
         std::ostringstream errors;
+        std::istringstream input;
         const int result = runCli(
             std::vector<std::string>{
                 "compress", inputPath, "-o", outputPath
             },
+            input,
             output,
             errors);
 
@@ -138,10 +150,12 @@ namespace
 
         std::ostringstream output;
         std::ostringstream errors;
+        std::istringstream input;
         const int result = runCli(
             std::vector<std::string>{
                 "compress", inputPath, "-o", outputPath
             },
+            input,
             output,
             errors);
 
@@ -163,12 +177,149 @@ namespace
                expect(errors.str().empty(),
                       "do not report errors for empty input");
     }
+
+    bool testOverwriteConfirmation()
+    {
+        const std::string inputPath = "cli_test_overwrite_input";
+        const std::string outputPath = "cli_test_overwrite_output.huff";
+        std::remove(inputPath.c_str());
+        std::remove(outputPath.c_str());
+
+        {
+            std::ofstream input(inputPath.c_str(), std::ios::binary);
+            input << "overwrite test";
+            if (!input)
+                return expect(false, "create overwrite input fixture");
+        }
+
+        {
+            std::ofstream existing(outputPath.c_str(), std::ios::binary);
+            existing << "keep";
+            if (!existing)
+                return expect(false, "create existing output fixture");
+        }
+
+        std::ostringstream rejectedOutput;
+        std::ostringstream rejectedErrors;
+        std::istringstream noAnswer("n\n");
+        const int rejected = runCli(
+            std::vector<std::string>{
+                "compress", inputPath, "-o", outputPath
+            },
+            noAnswer,
+            rejectedOutput,
+            rejectedErrors);
+
+        std::ifstream preservedFile(outputPath.c_str(), std::ios::binary);
+        std::string preserved;
+        preserved.assign(
+            std::istreambuf_iterator<char>(preservedFile),
+            std::istreambuf_iterator<char>());
+        preservedFile.close();
+
+        if (!expect(rejected != 0, "cancel unconfirmed overwrite"))
+            return false;
+        if (!expect(preserved == "keep",
+                    "preserve existing file after declining"))
+            return false;
+        if (!expect(rejectedOutput.str().find("Overwrite? [y/N]:") !=
+                        std::string::npos,
+                    "prompt before replacing existing output"))
+            return false;
+        if (!expect(rejectedErrors.str().find(
+                        "existing output was not changed.") !=
+                        std::string::npos,
+                    "explain that declined overwrite preserved the file"))
+            return false;
+
+        std::ostringstream confirmedOutput;
+        std::ostringstream confirmedErrors;
+        std::istringstream yesAnswer("YES\n");
+        const int confirmed = runCli(
+            std::vector<std::string>{
+                "compress", inputPath, "-o", outputPath
+            },
+            yesAnswer,
+            confirmedOutput,
+            confirmedErrors);
+
+        std::ifstream replacedFile(outputPath.c_str(), std::ios::binary);
+        char magic[4] = {};
+        replacedFile.read(magic, sizeof(magic));
+        const bool replaced =
+            replacedFile.gcount() == 4 &&
+            magic[0] == 'H' && magic[1] == 'U' &&
+            magic[2] == 'F' && magic[3] == 'F';
+        replacedFile.close();
+
+        std::remove(inputPath.c_str());
+        std::remove(outputPath.c_str());
+
+        return expect(confirmed == 0, "allow confirmed overwrite") &&
+               expect(replaced, "replace only after confirmation") &&
+               expect(confirmedErrors.str().empty(),
+                      "do not report errors after confirmed overwrite");
+    }
+
+    bool testForceOverwrite()
+    {
+        const std::string inputPath = "cli_test_force_input";
+        const std::string outputPath = "cli_test_force_output.huff";
+        std::remove(inputPath.c_str());
+        std::remove(outputPath.c_str());
+
+        {
+            std::ofstream input(inputPath.c_str(), std::ios::binary);
+            input << "force test";
+            if (!input)
+                return expect(false, "create force input fixture");
+        }
+        {
+            std::ofstream existing(outputPath.c_str(), std::ios::binary);
+            existing << "keep";
+            if (!existing)
+                return expect(false, "create force output fixture");
+        }
+
+        std::ostringstream output;
+        std::ostringstream errors;
+        std::istringstream noInput;
+        const int result = runCli(
+            std::vector<std::string>{
+                "compress", inputPath, "-o", outputPath, "--force"
+            },
+            noInput,
+            output,
+            errors);
+        const std::string outputText = output.str();
+
+        std::ifstream replacedFile(outputPath.c_str(), std::ios::binary);
+        char magic[4] = {};
+        replacedFile.read(magic, sizeof(magic));
+        const bool replaced =
+            replacedFile.gcount() == 4 &&
+            magic[0] == 'H' && magic[1] == 'U' &&
+            magic[2] == 'F' && magic[3] == 'F';
+        replacedFile.close();
+
+        std::remove(inputPath.c_str());
+        std::remove(outputPath.c_str());
+
+        return expect(result == 0, "allow deliberate --force overwrite") &&
+               expect(replaced, "force writes a valid compressed file") &&
+               expect(outputText.find("Overwrite? [y/N]:") ==
+                          std::string::npos,
+                      "skip prompt with --force") &&
+               expect(errors.str().empty(),
+                      "do not report errors after forced overwrite");
+    }
 }
 
 int main()
 {
     if (!testArgumentParsing() || !testCompressionCommand() ||
-        !testEmptyInputStatistics())
+        !testEmptyInputStatistics() || !testOverwriteConfirmation() ||
+        !testForceOverwrite())
         return 1;
 
     std::cout << "All CLI tests passed." << std::endl;
